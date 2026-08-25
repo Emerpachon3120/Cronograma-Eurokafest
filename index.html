@@ -180,7 +180,9 @@
     height:44px;display:flex;align-items:center;gap:7px;padding:0 10px;
     border-bottom:1px solid var(--line);font-weight:700;font-size:12.5px;
     position:sticky;top:0;background:rgba(255,255,255,.75);backdrop-filter:blur(2px);z-index:2;
+    overflow:hidden;
   }
+  .colhead > span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .swatch{width:9px;height:9px;border-radius:3px;flex:none;}
   .swatch-pick{position:relative;width:13px;height:13px;border-radius:4px;flex:none;border:1px solid rgba(0,0,0,.15);cursor:pointer;overflow:hidden;}
   .swatch-pick input[type=color]{position:absolute;inset:-4px;width:22px;height:22px;border:none;padding:0;cursor:pointer;opacity:0;}
@@ -277,9 +279,15 @@
     .toolbar{align-items:stretch;}
     .toolbar h2{font-size:14px;}
     button.btn{padding:8px 12px;font-size:12.5px;}
-    .loccol{flex:0 0 190px;width:190px;max-width:190px;}
-    .timecol{flex:0 0 50px;}
-    .activity{font-size:10.5px;}
+    .schedule{min-width:0;width:100%;}
+    .loccol{flex:1 1 0;width:auto;min-width:0;max-width:none;}
+    .timecol{flex:0 0 40px;}
+    .timecol .slot{font-size:9px;padding-right:4px;}
+    .colhead{padding:0 5px;font-size:10.5px;gap:4px;}
+    .colhead span, .colhead label{flex:none;}
+    .activity{font-size:9px;padding:4px 5px;}
+    .activity .a-title{margin-bottom:0;}
+    .activity .a-time{font-size:8.5px;}
     .modal{padding:16px;}
     .row2{flex-direction:column;gap:0;}
   }
@@ -641,7 +649,7 @@ function renderGrid(){
     colhead.innerHTML = `
       <label class="swatch-pick" style="background:${colorFor(loc)}" title="Cambiar color de ${loc}">
         <input type="color" value="${colorFor(loc)}">
-      </label> ${loc}`;
+      </label> <span>${loc}</span>`;
     colhead.querySelector('input[type=color]').addEventListener('input', (e)=>{
       setLocationColor(loc, e.target.value);
     });
