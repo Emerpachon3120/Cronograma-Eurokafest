@@ -164,9 +164,10 @@
     background:rgba(255,255,255,.55);border:1px solid var(--line);border-radius:var(--radius);
     box-shadow:var(--shadow);overflow:hidden;
     backdrop-filter:blur(2px);
+    display:inline-block;max-width:100%;
   }
-  .gridscroll{overflow-x:auto;}
-  .schedule{display:flex;min-width:600px;}
+  .gridscroll{overflow-x:auto;max-width:100%;}
+  .schedule{display:inline-flex;min-width:292px;}
   .timecol{flex:0 0 62px;border-right:1px solid var(--line);}
   .timecol .colhead{height:44px;border-bottom:1px solid var(--line);}
   .timecol .slot{
