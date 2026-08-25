@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cronograma Operativo · Semana 14–18 septiembre</title>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --bg:#F4F2EB;
+    --panel:#FFFFFF;
+    --ink:#211F1A;
+    --ink-soft:#6B6A5F;
+    --line:#DCD7C8;
+    --primary:#1D5C4E;
+    --primary-dark:#123C33;
+    --primary-tint:#E4EEE9;
+    --alert:#C13F26;
+    --alert-bg:#FBE6E0;
+    --alert-line:#E8B4A4;
+    --pending:#B87A1F;
+    --pending-bg:#FBF0DA;
+    --pending-line:#E9CC96;
+    --shadow: 0 1px 2px rgba(33,31,26,0.06), 0 4px 14px rgba(33,31,26,0.06);
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;
+    line-height:1.45;
+    padding:20px;
+  }
+  .mono{font-family:ui-monospace,"SF Mono","Cascadia Mono","Consolas","Liberation Mono",monospace;}
+  .wrap{max-width:1240px;margin:0 auto;}
+
+  /* HEADER */
+  .topbar{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .title-block h1{
+    font-family:"Arial Black","Helvetica Neue",sans-serif;
+    font-weight:900;
+    font-size:22px;
+    letter-spacing:-0.02em;
+    margin:0 0 4px 0;
+    color:var(--primary-dark);
+  }
+  .title-block p{margin:0;color:var(--ink-soft);font-size:13px;}
+  .status-pill{
+    display:flex;align-items:center;gap:10px;
+    background:var(--panel);border:1px solid var(--line);border-radius:999px;
+    padding:8px 16px 8px 12px;box-shadow:var(--shadow);
+  }
+  .dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .dot.ok{background:#2F8F5B;}
+  .dot.bad{background:var(--alert);box-shadow:0 0 0 0 rgba(193,63,38,.6);animation:pulse 1.8s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(193,63,38,.5);}
+    70%{box-shadow:0 0 0 8px rgba(193,63,38,0);}
+    100%{box-shadow:0 0 0 0 rgba(193,63,38,0);}
+  }
+  .status-pill strong{font-size:13px;}
+  .status-pill span.small{color:var(--ink-soft);font-size:12px;}
+  .sync-note{font-size:11px;color:var(--ink-soft);margin-top:4px;text-align:right;}
+  .sync-note button{
+    border:none;background:none;color:var(--primary);cursor:pointer;font-size:11px;
+    text-decoration:underline;padding:0;margin-left:6px;
+  }
+
+  /* TABS */
+  .daytabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .daytab{
+    flex:1 1 170px;min-width:150px;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:10px 12px;cursor:pointer;text-align:left;
+    transition:border-color .15s, transform .1s;
+  }
+  .daytab:hover{border-color:var(--primary);}
+  .daytab.active{
+    border-color:var(--primary);
+    background:var(--primary-tint);
+    box-shadow:inset 0 0 0 1px var(--primary);
+  }
+  .daytab .d-name{font-weight:700;font-size:13.5px;color:var(--ink);}
+  .daytab .d-sub{font-size:11px;color:var(--ink-soft);margin-top:1px;}
+  .daytab .d-meta{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}
+  .tag{
+    font-size:10.5px;padding:2px 7px;border-radius:999px;font-weight:600;
+  }
+  .tag.act{background:#EDEAE0;color:var(--ink-soft);}
+  .tag.pend{background:var(--pending-bg);color:var(--pending);border:1px solid var(--pending-line);}
+  .tag.conf{background:var(--alert-bg);color:var(--alert);border:1px solid var(--alert-line);}
+
+  /* TOOLBAR */
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .toolbar h2{font-size:16px;margin:0;}
+  .toolbar .actions{display:flex;gap:8px;}
+  button.btn{
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+    border-radius:8px;padding:9px 14px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);transition:.15s;
+  }
+  button.btn:hover{border-color:var(--primary);color:var(--primary-dark);}
+  button.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
+  button.btn.primary:hover{background:var(--primary-dark);}
+  button.btn.danger{color:var(--alert);}
+  button.btn.danger:hover{border-color:var(--alert);}
+  button.btn.ghost{border-color:transparent;background:transparent;padding:6px 8px;}
+
+  /* PENDING TRAY */
+  .tray{
+    background:var(--pending-bg);border:1px dashed var(--pending-line);
+    border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;
+    display:none;
+  }
+  .tray.show{display:block;}
+  .tray-head{font-size:12px;font-weight:700;color:var(--pending);margin-bottom:8px;text-transform:uppercase;letter-spacing:.03em;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    background:#fff;border:1px solid var(--pending-line);border-radius:8px;
+    padding:7px 10px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:6px;
+    box-shadow:var(--shadow);
+  }
+  .chip:hover{border-color:var(--pending);}
+  .chip .chip-loc{color:var(--ink-soft);font-size:11px;}
+
+  /* GRID */
+  .gridpanel{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .gridscroll{overflow-x:auto;}
+  .schedule{display:flex;min-width:600px;}
+  .timecol{flex:0 0 62px;border-right:1px solid var(--line);}
+  .timecol .colhead{height:44px;border-bottom:1px solid var(--line);}
+  .timecol .slot{
+    height:60px;border-bottom:1px solid var(--line);
+    font-size:10.5px;color:var(--ink-soft);text-align:right;padding:2px 8px 0 0;
+  }
+  .timecol .slot.half{color:#B9B6A8;}
+  .loccol{flex:1 1 200px;min-width:190px;border-right:1px solid var(--line);position:relative;}
+  .loccol:last-child{border-right:none;}
+  .colhead{
+    height:44px;display:flex;align-items:center;gap:7px;padding:0 10px;
+    border-bottom:1px solid var(--line);font-weight:700;font-size:12.5px;
+    position:sticky;top:0;background:var(--panel);z-index:2;
+  }
+  .swatch{width:9px;height:9px;border-radius:3px;flex:none;}
+  .track{position:relative;}
+  .gridline{position:absolute;left:0;right:0;border-bottom:1px solid var(--line);}
+  .gridline.half{border-bottom:1px solid #EEEBE0;}
+  .empty-col{
+    padding:16px 10px;font-size:12px;color:var(--ink-soft);
+  }
+
+  .activity{
+    position:absolute;left:2px;right:2px;
+    border-radius:7px;padding:6px 8px;color:#fff;
+    font-size:11.5px;line-height:1.3;overflow:hidden;cursor:pointer;
+    box-shadow:0 1px 3px rgba(0,0,0,.18);
+    border:2px solid transparent;
+  }
+  .activity:hover{filter:brightness(1.06);}
+  .activity .a-title{font-weight:700;display:block;margin-bottom:1px;}
+  .activity .a-time{opacity:.9;font-size:10.5px;}
+  .activity.conflict{
+    border-color:var(--alert);
+    animation:ring 1.6s infinite;
+  }
+  @keyframes ring{
+    0%{box-shadow:0 0 0 0 rgba(193,63,38,.55);}
+    70%{box-shadow:0 0 0 6px rgba(193,63,38,0);}
+    100%{box-shadow:0 0 0 0 rgba(193,63,38,0);}
+  }
+  .activity .warn-badge{
+    position:absolute;top:3px;right:3px;background:var(--alert);
+    width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:900;
+  }
+  .activity.tbd{
+    background:repeating-linear-gradient(135deg, rgba(255,255,255,.16) 0 6px, rgba(255,255,255,.05) 6px 12px);
+    border-style:dashed;border-color:rgba(255,255,255,.7);
+  }
+
+  /* CONFLICTS PANEL */
+  .conflicts{
+    margin-top:14px;border-radius:var(--radius);
+    border:1px solid var(--alert-line);background:var(--alert-bg);
+    padding:12px 14px;display:none;
+  }
+  .conflicts.show{display:block;}
+  .conflicts h3{margin:0 0 8px 0;font-size:13px;color:var(--alert);}
+  .conflicts ul{margin:0;padding-left:18px;}
+  .conflicts li{margin-bottom:5px;font-size:12.5px;}
+  .conflicts .fix{
+    margin-left:8px;font-size:11px;color:var(--alert);text-decoration:underline;cursor:pointer;background:none;border:none;font-weight:600;
+  }
+  .all-clear{
+    margin-top:14px;border-radius:var(--radius);border:1px solid #BFE0CC;background:#E9F6EE;
+    padding:10px 14px;color:#1E6B44;font-size:12.5px;display:none;
+  }
+  .all-clear.show{display:block;}
+
+  /* LEGEND */
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--ink-soft);}
+  .legend .li{display:flex;align-items:center;gap:6px;}
+  .legend .swatch-lg{width:14px;height:14px;border-radius:4px;}
+
+  /* MODAL */
+  .overlay{
+    display:none;position:fixed;inset:0;background:rgba(20,18,14,.45);
+    align-items:center;justify-content:center;z-index:50;padding:16px;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:#fff;border-radius:14px;padding:22px;width:100%;max-width:440px;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  .modal h3{margin:0 0 14px 0;font-size:16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;}
+  .field input[type=text], .field input[type=time], .field select, .field textarea{
+    width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;
+  }
+  .field textarea{resize:vertical;min-height:50px;}
+  .row2{display:flex;gap:10px;}
+  .row2 .field{flex:1;}
+  .checkfield{display:flex;align-items:center;gap:7px;font-size:12.5px;margin-bottom:12px;color:var(--ink-soft);}
+  .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
+  .modal-actions .right{display:flex;gap:8px;}
+
+  @media (max-width:640px){
+    body{padding:12px;}
+    .topbar{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="title-block">
+      <h1>Cronograma operativo · Nemocón Innova</h1>
+      <p>Semana del 14 al 18 de septiembre — vista de coordinación por día, hora y ubicación</p>
+    </div>
+    <div>
+      <div class="status-pill" id="statusPill">
+        <span class="dot ok" id="statusDot"></span>
+        <div>
+          <strong id="statusText">Sin conflictos</strong><br>
+          <span class="small" id="statusSub">0 actividades · 0 pendientes</span>
+        </div>
+      </div>
+      <div class="sync-note">🔴 En vivo con Firebase · última actualización <span id="lastSync">—</span><button id="refreshBtn">Actualizar ahora</button></div>
+    </div>
+  </div>
+
+  <div class="daytabs" id="dayTabs"></div>
+
+  <div class="toolbar">
+    <h2 id="dayHeading"></h2>
+    <div class="actions">
+      <button class="btn primary" id="addBtn">+ Nueva actividad</button>
+    </div>
+  </div>
+
+  <div class="tray" id="tray">
+    <div class="tray-head">Por confirmar horario — clic para asignar</div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="gridpanel">
+    <div class="gridscroll">
+      <div class="schedule" id="schedule"></div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="li"><span class="swatch-lg" style="background:var(--alert);border:2px solid var(--alert)"></span> Conflicto de horario en la misma ubicación</div>
+    <div class="li"><span class="swatch-lg" style="background:repeating-linear-gradient(135deg,#999 0 4px,#ccc 4px 8px);border:1px dashed #888"></span> Hora de fin por confirmar</div>
+    <div class="li"><span class="swatch-lg" style="background:var(--pending-bg);border:1px dashed var(--pending-line)"></span> Sin horario asignado (bandeja "por confirmar")</div>
+  </div>
+
+  <div class="conflicts" id="conflictsPanel">
+    <h3>⚠ Conflictos detectados en este día</h3>
+    <ul id="conflictsList"></ul>
+  </div>
+  <div class="all-clear" id="allClear">✓ No hay cruces de horario en la misma ubicación para este día.</div>
+
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modalTitle">Nueva actividad</h3>
+    <div class="field">
+      <label>Actividad</label>
+      <input type="text" id="f_title" placeholder="Ej: Judo, Taller de drones...">
+    </div>
+    <div class="field">
+      <label>Ubicación</label>
+      <input type="text" id="f_location" list="locList" placeholder="Ej: Coliseo, Biblioteca Municipal...">
+      <datalist id="locList"></datalist>
+    </div>
+    <div class="checkfield">
+      <input type="checkbox" id="f_noTime"> Sin horario definido (va a la bandeja "por confirmar")
+    </div>
+    <div class="row2" id="timeRow">
+      <div class="field">
+        <label>Inicio</label>
+        <input type="time" id="f_start">
+      </div>
+      <div class="field">
+        <label>Fin</label>
+        <input type="time" id="f_end">
+      </div>
+    </div>
+    <div class="checkfield" id="tbdRow">
+      <input type="checkbox" id="f_endTbd"> Hora de fin por confirmar
+    </div>
+    <div class="field">
+      <label>Notas / responsable (opcional)</label>
+      <textarea id="f_notes" placeholder="Organizador, aforo, materiales, coordinador a cargo..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn danger" id="deleteBtn" style="display:none;">Eliminar</button>
+      <div class="right">
+        <button class="btn" id="cancelBtn">Cancelar</button>
+        <button class="btn primary" id="saveBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 1) PEGA AQUÍ TU firebaseConfig (Firebase console → Configuración
+//    del proyecto → Tus apps → ícono "</>"). Reemplaza todo el objeto.
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAhgiKumLlrTnYeG7nNymPeDqXbSyFRxXM",
+  authDomain: "cronograma-eurokafest.firebaseapp.com",
+  projectId: "cronograma-eurokafest",
+  storageBucket: "cronograma-eurokafest.firebasestorage.app",
+  messagingSenderId: "188022263952",
+  appId: "1:188022263952:web:ce7382dddae00022330815"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const docRef = db.collection('cronograma').doc('nemocon-2026');
+// ============================================================
+
+const DAY_START = 7*60;   // 07:00 in minutes
+const DAY_END   = 18*60;  // 18:00 in minutes
+const PX_PER_MIN = 2;
+
+const DAYS = [
+  {id:'lun', label:'Lunes', date:'14 sept', sub:'Inauguración'},
+  {id:'mar', label:'Martes', date:'15 sept', sub:''},
+  {id:'mie', label:'Miércoles', date:'16 sept', sub:''},
+  {id:'jue', label:'Jueves', date:'17 sept', sub:''},
+  {id:'vie', label:'Viernes', date:'18 sept', sub:''},
+];
+
+function uid(){ return 'a'+Math.random().toString(36).slice(2,9); }
+
+function defaultData(){
+  return [
+    // LUNES — sin horas indicadas, van a la bandeja "por confirmar"
+    {id:uid(), day:'lun', location:'Coliseo', title:'Judo', start:null, end:null, endTbd:false, notes:''},
+    {id:uid(), day:'lun', location:'Coliseo', title:'Domo astronómico', start:null, end:null, endTbd:false, notes:''},
+    {id:uid(), day:'lun', location:'Por definir', title:'Inauguración', start:null, end:null, endTbd:false, notes:'A cargo de la Gobernación'},
+    {id:uid(), day:'lun', location:'Por definir', title:'Taller de 3D y drones', start:null, end:null, endTbd:false, notes:'Gobernación de Cundinamarca — Secretaría de Ciencia, Tecnología e Innovación'},
+
+    // MARTES
+    {id:uid(), day:'mar', location:'Biblioteca y Teatro Municipal', title:'Talleres prácticos, demostraciones y charlas', start:'08:00', end:'12:00', endTbd:false, notes:''},
+    {id:uid(), day:'mar', location:'Cancha de Hockey', title:'Hockey', start:'10:00', end:null, endTbd:true, notes:''},
+    {id:uid(), day:'mar', location:'Cancha de Hockey', title:'Pickleball', start:'10:00', end:null, endTbd:true, notes:''},
+
+    // MIÉRCOLES
+    {id:uid(), day:'mie', location:'Eurekafest: Nemocón Innova', title:'Encuentro Eurekafest', start:'08:00', end:'12:00', endTbd:false, notes:''},
+    {id:uid(), day:'mie', location:'Aula Móvil', title:'Aula móvil car', start:'08:00', end:'16:00', endTbd:false, notes:''},
+
+    // JUEVES
+    {id:uid(), day:'jue', location:'Biblioteca y Teatro Municipal', title:'Talleres prácticos, demostraciones y charlas', start:'08:00', end:'12:00', endTbd:false, notes:''},
+    {id:uid(), day:'jue', location:'Aula Móvil', title:'Aula móvil car', start:'08:00', end:'16:00', endTbd:false, notes:'Inflables, biomáquinas, taller de máscaras, taller de lectura, gestión de riesgo y cambio climático (rotativo dentro del bloque)'},
+    {id:uid(), day:'jue', location:'Feria universitaria', title:'Feria universitaria', start:'09:00', end:'13:00', endTbd:false, notes:''},
+    {id:uid(), day:'jue', location:'Coliseo Municipal', title:'Competencia de cubo Rubik', start:'08:00', end:'13:00', endTbd:false, notes:''},
+
+    // VIERNES
+    {id:uid(), day:'vie', location:'Por definir', title:'School Gaming Tour — Final', start:'08:00', end:'10:00', endTbd:false, notes:''},
+    {id:uid(), day:'vie', location:'Por definir', title:'ColorFest', start:'10:00', end:'13:00', endTbd:false, notes:''},
+    {id:uid(), day:'vie', location:'Por definir', title:'Finales Torneo Pigial FC26', start:'14:00', end:'17:00', endTbd:false, notes:''},
+    {id:uid(), day:'vie', location:'Por definir', title:'Otras finales', start:null, end:null, endTbd:false, notes:'Pendiente de hora'},
+    {id:uid(), day:'vie', location:'Salón de Judo', title:'Actividades de Judo', start:null, end:null, endTbd:false, notes:'Actividades pendientes por definir'},
+  ];
+}
+
+let data = [];
+let currentDay = 'lun';
+let editingId = null;
+let pollTimer = null;
+
+const PALETTE = ['#1D5C4E','#8A4B38','#3D5A80','#8B5E3C','#5B4B8A','#4B7A8A','#7A5C3E','#5C7A3E','#8A3E5C','#3E5C8A','#6B6142','#4A6B4A'];
+function colorFor(loc){
+  let h=0; for(let i=0;i<loc.length;i++){ h = (h*31 + loc.charCodeAt(i)) >>> 0; }
+  return PALETTE[h % PALETTE.length];
+}
+
+function toMin(t){ if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
+function toHHMM(mins){ const h=Math.floor(mins/60), m=mins%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+
+let firstSnapshot = true;
+
+function startSync(){
+  docRef.onSnapshot((snap)=>{
+    if(snap.exists && snap.data().activities){
+      data = snap.data().activities;
+    } else if(firstSnapshot){
+      // documento aún no existe en Firestore: lo creamos con los datos iniciales
+      data = defaultData();
+      docRef.set({activities:data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    }
+    firstSnapshot = false;
+    render();
+    document.getElementById('statusText').textContent = document.getElementById('statusText').textContent; // no-op, real update happens in renderStatusPill
+    document.getElementById('lastSync').textContent = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  }, (err)=>{
+    console.error(err);
+    document.getElementById('statusSub').textContent = 'Error de conexión con Firebase — revisa firebaseConfig y las reglas de Firestore.';
+  });
+}
+
+async function saveData(){
+  try{
+    await docRef.set({activities:data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+  }catch(e){
+    alert('No se pudo guardar el cambio. Revisa tu conexión a internet.');
+  }
+}
+
+function activitiesForDay(day){ return data.filter(a=>a.day===day); }
+
+function computeConflicts(day){
+  const acts = activitiesForDay(day).filter(a=>a.start && a.end);
+  const byLoc = {};
+  acts.forEach(a=>{ (byLoc[a.location] = byLoc[a.location]||[]).push(a); });
+  const conflictIds = new Set();
+  const messages = [];
+  Object.keys(byLoc).forEach(loc=>{
+    const list = byLoc[loc].slice().sort((a,b)=>toMin(a.start)-toMin(b.start));
+    for(let i=0;i<list.length;i++){
+      for(let j=i+1;j<list.length;j++){
+        const A=list[i], B=list[j];
+        if(toMin(A.start) < toMin(B.end) && toMin(B.start) < toMin(A.end)){
+          conflictIds.add(A.id); conflictIds.add(B.id);
+          messages.push({loc, a:A, b:B});
+        }
+      }
+    }
+  });
+  return {conflictIds, messages};
+}
+
+function computeLanes(list){
+  // list sorted by start; assign lane index to avoid overlap within a location column
+  const sorted = list.slice().sort((a,b)=>toMin(a.start)-toMin(b.start));
+  const laneEnds = [];
+  const laneOf = {};
+  sorted.forEach(a=>{
+    const s = toMin(a.start), e = a.end ? toMin(a.end) : s+45;
+    let lane = laneEnds.findIndex(end=>end<=s);
+    if(lane===-1){ lane = laneEnds.length; laneEnds.push(e); }
+    else { laneEnds[lane] = e; }
+    laneOf[a.id]=lane;
+  });
+  const maxLanes = Math.max(1, laneEnds.length);
+  return {laneOf, maxLanes};
+}
+
+function renderTabs(){
+  const wrap = document.getElementById('dayTabs');
+  wrap.innerHTML = '';
+  DAYS.forEach(d=>{
+    const acts = activitiesForDay(d.id);
+    const pend = acts.filter(a=>!a.start).length;
+    const {messages} = computeConflicts(d.id);
+    const el = document.createElement('div');
+    el.className = 'daytab' + (d.id===currentDay?' active':'');
+    el.innerHTML = `
+      <div class="d-name">${d.label} <span style="font-weight:400;color:var(--ink-soft)">· ${d.date}</span></div>
+      <div class="d-sub">${d.sub||''}</div>
+      <div class="d-meta">
+        <span class="tag act">${acts.length} act.</span>
+        ${pend?`<span class="tag pend">${pend} pend.</span>`:''}
+        ${messages.length?`<span class="tag conf">${messages.length} conflicto${messages.length>1?'s':''}</span>`:''}
+      </div>`;
+    el.addEventListener('click', ()=>{ currentDay=d.id; render(); });
+    wrap.appendChild(el);
+  });
+}
+
+function renderStatusPill(){
+  let totalConf = 0, totalPend = 0, totalAct = data.length;
+  DAYS.forEach(d=>{ totalConf += computeConflicts(d.id).messages.length; });
+  totalPend = data.filter(a=>!a.start).length;
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  document.getElementById('statusSub').textContent = `${totalAct} actividades · ${totalPend} pendientes`;
+  if(totalConf>0){
+    dot.className='dot bad'; text.textContent = `${totalConf} conflicto${totalConf>1?'s':''} en la semana`;
+  } else {
+    dot.className='dot ok'; text.textContent = 'Sin conflictos de horario';
+  }
+}
+
+function renderTray(){
+  const day = currentDay;
+  const pending = activitiesForDay(day).filter(a=>!a.start);
+  const tray = document.getElementById('tray');
+  const chips = document.getElementById('chips');
+  if(pending.length===0){ tray.classList.remove('show'); return; }
+  tray.classList.add('show');
+  chips.innerHTML = '';
+  pending.forEach(a=>{
+    const c = document.createElement('div');
+    c.className='chip';
+    c.innerHTML = `<span class="swatch" style="background:${colorFor(a.location)}"></span> ${a.title} <span class="chip-loc">— ${a.location}</span>`;
+    c.addEventListener('click', ()=>openModal(a.id));
+    chips.appendChild(c);
+  });
+}
+
+function renderGrid(){
+  const day = currentDay;
+  const acts = activitiesForDay(day).filter(a=>a.start);
+  const locations = [...new Set(acts.map(a=>a.location))];
+  const schedule = document.getElementById('schedule');
+  schedule.innerHTML = '';
+
+  // time column
+  const timecol = document.createElement('div');
+  timecol.className='timecol';
+  let head = document.createElement('div'); head.className='colhead'; timecol.appendChild(head);
+  for(let t=DAY_START; t<DAY_END; t+=30){
+    const slot = document.createElement('div');
+    slot.className = 'slot' + (t%60!==0?' half':'');
+    slot.textContent = t%60===0 ? toHHMM(t) : '';
+    timecol.appendChild(slot);
+  }
+  schedule.appendChild(timecol);
+
+  if(locations.length===0){
+    const empty = document.createElement('div');
+    empty.className='loccol';
+    empty.innerHTML = `<div class="colhead">Sin actividades con horario</div><div class="empty-col">Agrega una actividad o asigna horario a los elementos de la bandeja "por confirmar".</div>`;
+    schedule.appendChild(empty);
+    return;
+  }
+
+  const {conflictIds} = computeConflicts(day);
+
+  locations.forEach(loc=>{
+    const col = document.createElement('div');
+    col.className='loccol';
+    const colhead = document.createElement('div');
+    colhead.className='colhead';
+    colhead.innerHTML = `<span class="swatch" style="background:${colorFor(loc)}"></span> ${loc}`;
+    col.appendChild(colhead);
+
+    const track = document.createElement('div');
+    track.className='track';
+    const totalMin = DAY_END-DAY_START;
+    track.style.height = (totalMin*PX_PER_MIN)+'px';
+
+    for(let t=DAY_START; t<=DAY_END; t+=30){
+      const line = document.createElement('div');
+      line.className='gridline'+(t%60!==0?' half':'');
+      line.style.top = ((t-DAY_START)*PX_PER_MIN)+'px';
+      track.appendChild(line);
+    }
+
+    const locActs = acts.filter(a=>a.location===loc);
+    const {laneOf, maxLanes} = computeLanes(locActs);
+
+    locActs.forEach(a=>{
+      const s = Math.max(toMin(a.start), DAY_START);
+      const eRaw = a.end ? toMin(a.end) : toMin(a.start)+45;
+      const e = Math.min(eRaw, DAY_END);
+      const top = (s-DAY_START)*PX_PER_MIN;
+      const height = Math.max((e-s)*PX_PER_MIN, 26);
+      const lane = laneOf[a.id]||0;
+      const width = 100/maxLanes;
+
+      const box = document.createElement('div');
+      box.className = 'activity' + (conflictIds.has(a.id)?' conflict':'') + (a.endTbd?' tbd':'');
+      box.style.top = top+'px';
+      box.style.height = height+'px';
+      box.style.background = colorFor(loc);
+      box.style.left = `calc(${lane*width}% + 2px)`;
+      box.style.width = `calc(${width}% - 4px)`;
+      box.innerHTML = `
+        ${conflictIds.has(a.id)?'<div class="warn-badge">!</div>':''}
+        <span class="a-title">${a.title}</span>
+        <span class="a-time">${a.start}${a.end? '–'+a.end : (a.endTbd?' (fin por confirmar)':'')}</span>`;
+      box.title = a.notes || '';
+      box.addEventListener('click', ()=>openModal(a.id));
+      track.appendChild(box);
+    });
+
+    col.appendChild(track);
+    schedule.appendChild(col);
+  });
+}
+
+function renderConflictsPanel(){
+  const day = currentDay;
+  const {messages} = computeConflicts(day);
+  const panel = document.getElementById('conflictsPanel');
+  const list = document.getElementById('conflictsList');
+  const clear = document.getElementById('allClear');
+  if(messages.length===0){
+    panel.classList.remove('show');
+    clear.classList.add('show');
+    return;
+  }
+  clear.classList.remove('show');
+  panel.classList.add('show');
+  list.innerHTML = '';
+  messages.forEach(m=>{
+    const li = document.createElement('li');
+    li.innerHTML = `<strong>${m.loc}</strong>: "${m.a.title}" (${m.a.start}–${m.a.end}) se cruza con "${m.b.title}" (${m.b.start}–${m.b.end})
+      <button class="fix">Editar "${m.a.title}"</button>`;
+    li.querySelector('.fix').addEventListener('click', ()=>openModal(m.a.id));
+    list.appendChild(li);
+  });
+}
+
+function render(){
+  const d = DAYS.find(x=>x.id===currentDay);
+  document.getElementById('dayHeading').textContent = `${d.label} ${d.date}${d.sub? ' — '+d.sub:''}`;
+  renderTabs();
+  renderStatusPill();
+  renderTray();
+  renderGrid();
+  renderConflictsPanel();
+  // datalist of known locations
+  const locList = document.getElementById('locList');
+  const locs = [...new Set(data.map(a=>a.location))];
+  locList.innerHTML = locs.map(l=>`<option value="${l}">`).join('');
+}
+
+// ---- Modal handling ----
+function openModal(id){
+  editingId = id || null;
+  const overlay = document.getElementById('overlay');
+  const isEdit = !!id;
+  document.getElementById('modalTitle').textContent = isEdit ? 'Editar actividad' : 'Nueva actividad';
+  document.getElementById('deleteBtn').style.display = isEdit ? 'inline-block' : 'none';
+
+  if(isEdit){
+    const a = data.find(x=>x.id===id);
+    document.getElementById('f_title').value = a.title;
+    document.getElementById('f_location').value = a.location;
+    document.getElementById('f_notes').value = a.notes||'';
+    document.getElementById('f_noTime').checked = !a.start;
+    document.getElementById('f_start').value = a.start||'';
+    document.getElementById('f_end').value = a.end||'';
+    document.getElementById('f_endTbd').checked = !!a.endTbd;
+  } else {
+    document.getElementById('f_title').value='';
+    document.getElementById('f_location').value='';
+    document.getElementById('f_notes').value='';
+    document.getElementById('f_noTime').checked=false;
+    document.getElementById('f_start').value='';
+    document.getElementById('f_end').value='';
+    document.getElementById('f_endTbd').checked=false;
+  }
+  toggleTimeFields();
+  overlay.classList.add('show');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('show'); editingId=null; }
+
+function toggleTimeFields(){
+  const noTime = document.getElementById('f_noTime').checked;
+  document.getElementById('timeRow').style.display = noTime ? 'none' : 'flex';
+  document.getElementById('tbdRow').style.display = noTime ? 'none' : 'flex';
+}
+
+document.getElementById('f_noTime').addEventListener('change', toggleTimeFields);
+document.getElementById('addBtn').addEventListener('click', ()=>openModal(null));
+document.getElementById('cancelBtn').addEventListener('click', closeModal);
+document.getElementById('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeModal(); });
+
+document.getElementById('saveBtn').addEventListener('click', async ()=>{
+  const title = document.getElementById('f_title').value.trim();
+  const location = document.getElementById('f_location').value.trim();
+  if(!title || !location){ alert('Escribe al menos el nombre de la actividad y la ubicación.'); return; }
+  const noTime = document.getElementById('f_noTime').checked;
+  const notes = document.getElementById('f_notes').value.trim();
+  let start=null, end=null, endTbd=false;
+  if(!noTime){
+    start = document.getElementById('f_start').value || null;
+    end = document.getElementById('f_end').value || null;
+    endTbd = document.getElementById('f_endTbd').checked || !end;
+    if(!start){ alert('Indica al menos la hora de inicio, o marca "sin horario definido".'); return; }
+    if(endTbd) end = null;
+  }
+  if(editingId){
+    const a = data.find(x=>x.id===editingId);
+    Object.assign(a, {title, location, start, end, endTbd, notes, day:currentDay});
+  } else {
+    data.push({id:uid(), day:currentDay, title, location, start, end, endTbd, notes});
+  }
+  await saveData();
+  closeModal();
+  render();
+});
+
+document.getElementById('deleteBtn').addEventListener('click', async ()=>{
+  if(!editingId) return;
+  if(!confirm('¿Eliminar esta actividad del cronograma?')) return;
+  data = data.filter(x=>x.id!==editingId);
+  await saveData();
+  closeModal();
+  render();
+});
+
+document.getElementById('refreshBtn').style.display = 'none'; // ya no hace falta: Firestore sincroniza en vivo
+
+startSync();
+</script>
+</body>
+</html>
