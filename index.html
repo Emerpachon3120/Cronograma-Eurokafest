@@ -163,9 +163,10 @@
   .gridpanel{
     background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
     box-shadow:var(--shadow);overflow:hidden;
+    display:inline-block;max-width:100%;vertical-align:top;
   }
-  .gridscroll{overflow-x:auto;}
-  .schedule{display:flex;min-width:600px;}
+  .gridscroll{overflow-x:auto;max-width:100%;}
+  .schedule{display:inline-flex;}
   .timecol{flex:0 0 62px;border-right:1px solid var(--line);}
   .timecol .colhead{height:44px;border-bottom:1px solid var(--line);}
   .timecol .slot{
